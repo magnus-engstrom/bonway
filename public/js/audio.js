@@ -9,7 +9,7 @@ const SOUNDS = {
   level: 'audio/level-complete.m4a',     // en nivå är klar
   island: 'audio/island-complete.m4a',   // hela ön är klar
 };
-const VOLUME = { music: 0.144, engine: 0.35, point: 0.55, level: 0.6, island: 0.65 };
+const VOLUME = { music: 0.072, engine: 0.35, point: 0.55, level: 0.6, island: 0.65 };
 
 const sound = {
   music: store.get('bonway.music', true),

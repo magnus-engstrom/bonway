@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bonway</title>
+<meta name="description" content="Bonway – ett pusselspel om leveranser på en ö. Kör ut alla bilar till rätt lastzon utan att fastna i varandras rutter.">
+<meta name="theme-color" content="#121722">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d6f80'/%3E%3Crect x='7' y='10' width='18' height='12' rx='3' fill='%23e5534b'/%3E%3Crect x='19' y='12' width='4' height='8' rx='1' fill='%231d2b44'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="column hud">
+  <div class="where">
+    <span class="island" id="island">Ö 1</span>
+    <span class="label">Nivå</span>
+    <div class="stages" id="count" role="group" aria-label="Nivå">
+      <button data-k="1" aria-label="Nivå 1">1</button>
+      <button data-k="2" aria-label="Nivå 2">2</button>
+      <button data-k="3" aria-label="Nivå 3">3</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat" id="movesBox" title="Drag kvar"><b id="movesLeft">0</b> drag</div>
+    <div class="stat"><b id="score">0</b> poäng</div>
+    <div class="stat" id="streakBox" title="Perfekta nivåer i rad">🔥 <b id="streak">0</b></div>
+  </div>
+</div>
+<div id="wrap"><canvas id="cv" aria-label="Spelplan"></canvas></div>
+<div class="column">
+  <div id="msg" role="status"></div>
+  <div class="actions">
+    <button class="primary" id="next" hidden>Nästa nivå</button>
+    <button id="undo">Ångra</button>
+    <button id="reset">Börja om</button>
+    <button id="solve">Visa lösning</button>
+    <button id="new">Hoppa över ön</button>
+  </div>
+  <div class="links">
+    <button id="help">Så spelar du</button>
+    <button id="topBtn">Topplista</button>
+  </div>
+</div>
+
+<dialog id="topDialog" aria-labelledby="topTitle">
+  <h2 id="topTitle">Topplista</h2>
+  <p class="lead" id="topLead"></p>
+  <div id="topList"></div>
+  <form method="dialog"><button class="primary go">Stäng</button></form>
+</dialog>
+
+<dialog id="intro" aria-labelledby="introTitle">
+  <p class="brand">Bonway</p>
+  <h2 id="introTitle">Leveranser på ön</h2>
+  <p class="lead">Kör ut alla bilar till sina lastzoner – utan att fastna i varandras rutter.</p>
+  <ol>
+    <li>
+      <svg viewBox="0 0 104 78" aria-hidden="true">
+        <rect width="104" height="78" fill="#4a4e55"/>
+        <rect x="0" y="0" width="104" height="26" fill="#4c8a3a"/><rect x="0" y="52" width="104" height="26" fill="#4c8a3a"/>
+        <rect x="78" y="26" width="26" height="26" fill="#4c8a3a" rx="3"/>
+        <path d="M22 39 H66" stroke="#fff" stroke-width="2" stroke-dasharray="4 4" opacity=".8"/>
+        <path d="M66 33 l7 6 -7 6z" fill="#fff"/>
+        <rect x="6" y="31" width="20" height="16" rx="4" fill="#e5534b"/><rect x="19" y="34" width="5" height="10" rx="1.5" fill="#1d2b44"/>
+        <rect x="56" y="31" width="20" height="16" rx="4" fill="#e5534b" opacity=".35"/>
+      </svg>
+      <div><b>1. Bilen kör tills något tar stopp</b><span>Välj en bil och en riktning. Den kör rakt fram ända tills den möter ett kvarter eller en rutt.</span></div>
+    </li>
+    <li>
+      <svg viewBox="0 0 104 78" aria-hidden="true">
+        <rect width="104" height="78" fill="#4a4e55"/>
+        <path d="M66 0 V78" stroke="#3d8bfd" stroke-width="9" stroke-linecap="round"/>
+        <path d="M24 39 H54" stroke="#fff" stroke-width="2" stroke-dasharray="4 4" opacity=".8"/>
+        <rect x="4" y="31" width="20" height="16" rx="4" fill="#e5534b"/><rect x="17" y="34" width="5" height="10" rx="1.5" fill="#1d2b44"/>
+        <rect x="40" y="31" width="20" height="16" rx="4" fill="#e5534b" opacity=".35"/>
+        <path d="M58 26 l4 4 m0 -4 l-4 4" stroke="#fff" stroke-width="2"/>
+      </svg>
+      <div><b>2. Rutter blir hinder</b><span>Där en bil har kört kan ingen annan köra över. Rutten kan stoppa en bil – eller stänga en väg.</span></div>
+    </li>
+    <li>
+      <svg viewBox="0 0 104 78" aria-hidden="true">
+        <rect width="104" height="78" fill="#1d6f80"/>
+        <rect x="0" y="0" width="70" height="78" fill="#4a4e55"/>
+        <rect x="70" y="27" width="34" height="24" fill="#4a4e55"/>
+        <path d="M70 0 V27 H104 M70 78 V51 H104" stroke="#e9dcc5" stroke-width="3" fill="none"/>
+        <rect x="80" y="31" width="20" height="16" rx="2" fill="#e5534b"/>
+        <path d="M84 47 l8 -16 M90 47 l8 -16" stroke="#fff" stroke-width="2" opacity=".5"/>
+        <path d="M14 39 H76" stroke="#e5534b" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+        <rect x="4" y="31" width="20" height="16" rx="4" fill="#e5534b"/><rect x="17" y="34" width="5" height="10" rx="1.5" fill="#1d2b44"/>
+      </svg>
+      <div><b>3. Leverera i rätt färg</b><span>Varje bil ska ut på en pir med lastzon i samma färg. Det finns ofta flera – välj den som går att nå.</span></div>
+    </li>
+    <li>
+      <svg viewBox="0 0 104 78" aria-hidden="true">
+        <rect width="104" height="78" fill="#4a4e55"/>
+        <rect x="6" y="8" width="20" height="16" rx="4" fill="#3d8bfd"/><rect x="19" y="11" width="5" height="10" rx="1.5" fill="#1d2b44"/>
+        <rect x="6" y="52" width="20" height="16" rx="4" fill="#e5534b"/><rect x="19" y="55" width="5" height="10" rx="1.5" fill="#1d2b44"/>
+        <circle cx="38" cy="16" r="8" fill="#fff"/><text x="38" y="20" font-size="11" font-weight="700" text-anchor="middle" fill="#1b2433">2</text>
+        <circle cx="38" cy="60" r="8" fill="#fff"/><text x="38" y="64" font-size="11" font-weight="700" text-anchor="middle" fill="#1b2433">1</text>
+        <rect x="58" y="27" width="40" height="24" rx="6" fill="rgba(255,255,255,.12)"/>
+        <text x="78" y="44" font-size="12" font-weight="700" text-anchor="middle" fill="#f2c14e">3 drag</text>
+      </svg>
+      <div><b>4. Tänk på ordningen</b><span>Dragen räcker precis. Fundera på vilken bil som ska köra först så att den inte spärrar vägen för de andra.</span></div>
+    </li>
+  </ol>
+  <p class="lead unlock">Klara nivå 1 för att låsa upp nivå 2 – varje nivå har en bil till.</p>
+  <form method="dialog"><button class="primary go" autofocus>Börja spela</button></form>
+</dialog>
+
+<script src="js/generator.js"></script>
+<script src="js/city.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/score.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

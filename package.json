@@ -1,0 +1,16 @@
+{
+  "name": "bonway",
+  "version": "1.0.0",
+  "description": "Bonway – ett pusselspel om leveranser på en ö",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "pregenerate": "node tools/pregenerate.cjs",
+    "sort-islands": "node tools/pregenerate.cjs --sort",
+    "build-tiles": "python3 tools/build-tiles.py"
+  }
+}

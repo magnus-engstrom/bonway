@@ -107,3 +107,10 @@ dialog .go { display: block; margin: 20px auto 0; font-size: .95rem; }
 #topDialog tr.latest td { color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) { .stat b.bump { animation: none; } }
+
+/* På mobilen tar spelplanen hela bredden; panel och knappar behåller en liten marginal */
+@media (max-width: 600px) {
+  body { padding: 12px 0; }
+  .column { padding: 0 12px; }
+  canvas { border-radius: 0; box-shadow: none; }
+}

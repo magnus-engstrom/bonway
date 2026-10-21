@@ -4,7 +4,7 @@
 // Kräver store från score.js.
 
 const SOUNDS = {
-  engine: 'audio/engine.m4a',            // en bil kör iväg (klippt till två sekunder)
+  engine: 'audio/engine.m4a',            // spelaren väljer en bil och motorn startar (två sekunder)
   point: 'audio/point.m4a',              // en bil når sin lastzon
   level: 'audio/level-complete.m4a',     // en nivå är klar
   island: 'audio/island-complete.m4a',   // hela ön är klar

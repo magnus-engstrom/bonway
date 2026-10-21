@@ -170,7 +170,6 @@ function move(li, d) {
   const firstClear = !cleared[stage], arrive = cells.length * CELL_MS;
   afterChange();
   const after = stateFrom(puzzle, moves);
-  playSound('engine');
   if (after.done[li]) playSound('point', arrive);
   if (playing || !after.done.every(Boolean)) return true;
   playSound(stage === set.stages.length ? 'island' : 'level', arrive + 250);
@@ -312,9 +311,9 @@ cv.addEventListener('click', e => {
     return dx ? py === fy && Math.sign(px - fx) === dx : px === fx && Math.sign(py - fy) === dy;
   });
   if (hit) { move(selected, hit.d); return; }
-  // Klick på en bil eller dess rutt väljer bilen
+  // Klick på en bil eller dess rutt väljer bilen, och motorn startar
   const li = st.trails.findIndex(tr => tr.includes(p));
-  if (li >= 0 && !st.done[li]) { selected = li; draw(); }
+  if (li >= 0 && !st.done[li]) { selected = li; playSound('engine'); draw(); }
 });
 
 window.addEventListener('keydown', e => {
@@ -322,7 +321,7 @@ window.addEventListener('keydown', e => {
   const d = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 }[e.key];
   if (d !== undefined && selected >= 0) { e.preventDefault(); move(selected, d); return; }
   const n = +e.key;
-  if (n >= 1 && n <= puzzle.lines.length && !stateFrom(puzzle, moves).done[n - 1]) { selected = n - 1; draw(); }
+  if (n >= 1 && n <= puzzle.lines.length && !stateFrom(puzzle, moves).done[n - 1]) { selected = n - 1; playSound('engine'); draw(); }
   if (e.key === 'z' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $('undo').click(); }
 });
 

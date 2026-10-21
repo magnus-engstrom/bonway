@@ -167,10 +167,13 @@ function move(li, d) {
   if (!cells.length || st.done[li] || moves.length >= puzzle.limit) return false;
   moves.push({ li, d });
   anim = { li, cells, t0: performance.now() };
-  const firstClear = !cleared[stage];
+  const firstClear = !cleared[stage], arrive = cells.length * CELL_MS;
   afterChange();
   const after = stateFrom(puzzle, moves);
+  playSound('engine');
+  if (after.done[li]) playSound('point', arrive);
   if (playing || !after.done.every(Boolean)) return true;
+  playSound(stage === set.stages.length ? 'island' : 'level', arrive + 250);
   // Poäng bara första gången nivån klaras på ön
   const result = firstClear ? scoreLevel(stage, levelClean, levelHelped, stage === set.stages.length) : null;
   showScore(result && result.points > 0);
@@ -351,6 +354,17 @@ function renderTop() {
   $('topList').innerHTML = `<table><tr><th>#</th><th class="num">Poäng</th><th class="num">Öar</th><th class="num">🔥</th><th>Datum</th></tr>${rows.join('')}</table>`;
 }
 $('topBtn').onclick = () => { renderTop(); $('topDialog').showModal(); };
+
+// Musik och ljudeffekter stängs av och på var för sig
+function showSoundButtons() {
+  $('musicBtn').setAttribute('aria-pressed', sound.music);
+  $('musicBtn').title = sound.music ? 'Stäng av musiken' : 'Slå på musiken';
+  $('effectsBtn').setAttribute('aria-pressed', sound.effects);
+  $('effectsBtn').title = sound.effects ? 'Stäng av ljudeffekterna' : 'Slå på ljudeffekterna';
+}
+$('musicBtn').onclick = () => { setMusic(!sound.music); showSoundButtons(); };
+$('effectsBtn').onclick = () => { setEffects(!sound.effects); showSoundButtons(); };
+showSoundButtons();
 
 // Introt visas när sidan laddas och stängs med knappen, Esc eller ett klick utanför rutan
 $('help').onclick = () => intro.showModal();

@@ -1,4 +1,5 @@
 # Behövs inte för att köra spelet: originalbilder, käll-tiles och dokumentation
 tools/art/
+tools/audio/
 tools/tiles/
 docs/

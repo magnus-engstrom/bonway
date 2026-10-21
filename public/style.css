@@ -71,6 +71,11 @@ canvas {
 .links { display: flex; justify-content: center; gap: 4px; margin-top: 14px; }
 .links button { background: none; border: 0; color: var(--on-bg-muted); }
 .links button:hover { background: none; color: var(--on-bg); }
+.links { flex-wrap: wrap; }
+/* Ljudknapparna visar om ljudet är på eller av */
+#musicBtn::before, #effectsBtn::before { content: '♪ '; }
+#effectsBtn::before { content: '🔊 '; }
+#musicBtn[aria-pressed="false"], #effectsBtn[aria-pressed="false"] { text-decoration: line-through; opacity: .6; }
 
 /* ---------- Dialoger: intro och topplista ---------- */
 

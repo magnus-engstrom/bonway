@@ -1,5 +1,5 @@
 // Liten statisk webbserver för Bonway, utan beroenden. Serverar public/ och används av Railway
-// (npm start). Text komprimeras med gzip och bilder får cachas av webbläsaren en dag.
+// (npm start). Text komprimeras med gzip och bilder och ljud får cachas av webbläsaren en dag.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.m4a': 'audio/mp4',
 };
 const COMPRESS = new Set(['.html', '.css', '.js', '.json', '.svg']);
 
@@ -21,8 +22,8 @@ function send(req, res, file, stat) {
   const etag = `"${stat.size.toString(36)}-${stat.mtimeMs.toString(36)}"`;
   res.setHeader('Content-Type', TYPES[ext] || 'application/octet-stream');
   res.setHeader('ETag', etag);
-  // Bilder byts sällan; allt annat kontrolleras mot servern så att en ny deploy syns direkt
-  res.setHeader('Cache-Control', ext === '.png' ? 'public, max-age=86400' : 'no-cache');
+  // Bilder och ljud byts sällan; allt annat kontrolleras mot servern så att en ny deploy syns direkt
+  res.setHeader('Cache-Control', ext === '.png' || ext === '.m4a' ? 'public, max-age=86400' : 'no-cache');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   if (req.headers['if-none-match'] === etag) { res.writeHead(304); return res.end(); }
 
@@ -33,6 +34,17 @@ function send(req, res, file, stat) {
     res.setHeader('Vary', 'Accept-Encoding');
     res.writeHead(200, { 'Content-Length': body.length });
     return res.end(req.method === 'HEAD' ? undefined : body);
+  }
+  // Delhämtning (Range) behövs för att Safari ska spela upp musiken
+  res.setHeader('Accept-Ranges', 'bytes');
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  if (range && (range[1] || range[2])) {
+    let start = range[1] ? +range[1] : stat.size - +range[2], end = range[1] && range[2] ? +range[2] : stat.size - 1;
+    end = Math.min(end, stat.size - 1);
+    if (start < 0 || start > end) { res.writeHead(416, { 'Content-Range': `bytes */${stat.size}` }); return res.end(); }
+    res.writeHead(206, { 'Content-Range': `bytes ${start}-${end}/${stat.size}`, 'Content-Length': end - start + 1 });
+    if (req.method === 'HEAD') return res.end();
+    return fs.createReadStream(file, { start, end }).pipe(res);
   }
   res.writeHead(200, { 'Content-Length': stat.size });
   if (req.method === 'HEAD') return res.end();

@@ -23,10 +23,12 @@ Inga beroenden behöver installeras; servern använder bara Node (version 20 ell
 | `public/js/city.js` | Grafiken: hav, kaj, gator, gräs, hus och bilar |
 | `public/js/effects.js` | Animationer: ön byggs upp, bilar studsar fram, konfetti |
 | `public/js/score.js` | Poäng, streak och topplista (sparas i webbläsaren) |
+| `public/js/audio.js` | Bakgrundsmusik och ljudeffekter, som kan stängas av var för sig |
 | `public/js/game.js` | Spelet: rendering, input, nivåer och sparad progress |
 | `public/data/` | `tiles.json` (labyrintens tiles) och `puzzles.json` (färdiga öar) |
-| `public/assets/` | Bildark för mark, kust, föremål och bilar |
-| `tools/` | Verktyg för att bygga tiles och öar, och käll-tiles i `tools/tiles/` |
+| `public/assets/` | Bildark för mark, kust, föremål och bilar (nedskalade) |
+| `public/audio/` | Musik och ljudeffekter i AAC |
+| `tools/` | Verktyg för att bygga tiles och öar; käll-tiles, originalbilder och originalljud |
 | `server.js` | Liten statisk webbserver som används av Railway |
 
 ## Skapa öar

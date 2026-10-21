@@ -33,6 +33,9 @@ const SPRITES = {
 };
 const VAN_ROW = [2, 1, 0]; // linje 0 är röd, 1 blå, 2 gul
 const VAN_BOX = [[75, 51, 222, 294], [381, 90, 333, 216], [795, 51, 222, 294], [1092, 90, 330, 216]];
+// Koordinaterna ovan gäller originalbilderna i tools/art/. Arken i public/assets/ är nedskalade för
+// att ladda snabbare, så koordinaterna skalas med samma faktor när figurerna ritas.
+const SHEET_SCALE = { a: 0.5, g: 0.5, b: 0.5, v: 0.5 };
 const VAN_ROW_Y = [0, 333, 669];
 
 // Vad som står på gräsrutorna; resten av rutorna är tom gräsmatta. [föremål, vikt, marginal]
@@ -147,7 +150,8 @@ function drawProp(c, name, x, y, size, padding) {
   c.save();
   c.shadowColor = `rgba(10,20,10,${LIGHT.alpha})`; c.shadowBlur = size * LIGHT.blur;
   c.shadowOffsetX = size * LIGHT.dx; c.shadowOffsetY = size * LIGHT.dy;
-  c.drawImage(img, spr[1], spr[2], spr[3], spr[4], x + (size - w) / 2, y + (size - h) / 2, w, h);
+  const s = SHEET_SCALE[spr[0]] || 1;
+  c.drawImage(img, spr[1] * s, spr[2] * s, spr[3] * s, spr[4] * s, x + (size - w) / 2, y + (size - h) / 2, w, h);
   c.restore();
 }
 
@@ -280,6 +284,7 @@ function drawSparkles(c, list, now) {
 function drawVan(c, li, d, x, y, cell, glow = false, shake = 0, now = 0) {
   const [sx, sy, sw, sh] = VAN_BOX[d], k = cell * 0.86 / Math.max(sw, sh);
   const w = sw * k, h = sh * k, oy = VAN_ROW_Y[VAN_ROW[li]];
+  const src = [sx, sy + oy, sw, sh].map(v => v * SHEET_SCALE.v); // rutan i det nedskalade arket
   if (shake) {
     // Några sinusvågor med olika takt ger en oregelbunden men mjuk vibration
     x += (Math.sin(now * 0.071) + Math.sin(now * 0.113) * 0.5) * cell * 0.006 * shake;
@@ -293,11 +298,11 @@ function drawVan(c, li, d, x, y, cell, glow = false, shake = 0, now = 0) {
     if (glow) {
       // Skenet ritas med bilen själv som form, två gånger för att bli tydligt men mjukt
       c.shadowColor = 'rgba(255,250,220,.95)'; c.shadowBlur = cell * 0.35;
-      c.drawImage(images.v, sx, sy + oy, sw, sh, x - w / 2, y - h / 2, w, h);
+      c.drawImage(images.v, ...src, x - w / 2, y - h / 2, w, h);
     }
     c.shadowColor = glow ? 'rgba(255,250,220,.8)' : 'rgba(0,0,0,.45)';
     c.shadowBlur = cell * (glow ? 0.2 : 0.15); c.shadowOffsetY = glow ? 0 : cell * 0.05;
-    c.drawImage(images.v, sx, sy + oy, sw, sh, x - w / 2, y - h / 2, w, h);
+    c.drawImage(images.v, ...src, x - w / 2, y - h / 2, w, h);
     c.restore();
   } else {
     c.fillStyle = COLORS[li]; c.fillRect(x - w / 2, y - h / 2, w, h);

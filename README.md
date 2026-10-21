@@ -55,10 +55,10 @@ med ett fast frö så att ordningen är densamma för alla.
 
 En runda avslutas och hamnar i topplistan om man hoppar över en ö innan den är klar.
 
-## Deploy
+## Publicering
 
-Projektet körs på [Railway](https://railway.com), som startar det med `npm start` och sätter `PORT`.
+Spelet publiceras på GitHub Pages: https://magnus-engstrom.github.io/bonway/
 
-```sh
-railway up
-```
+Flödet i `.github/workflows/pages.yml` publicerar mappen `public/` vid varje push till `main`. Spelet är
+helt statiskt, så ingen server behövs där. `server.js` används för att köra lokalt och fungerar även på
+till exempel Railway (`npm start`, som läser `PORT`).

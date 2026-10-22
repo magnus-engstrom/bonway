@@ -53,6 +53,13 @@ function playSound(name, delayMs = 0) {
   src.start(ctx.currentTime + delayMs / 1000);
 }
 
+// Musiken pausas när fliken inte syns och fortsätter när spelaren kommer tillbaka
+document.addEventListener('visibilitychange', () => {
+  if (!sound.track || !sound.music) return;
+  if (document.hidden) sound.track.pause();
+  else sound.track.play().catch(() => {});
+});
+
 function setMusic(on) {
   sound.music = on;
   store.set('bonway.music', on);

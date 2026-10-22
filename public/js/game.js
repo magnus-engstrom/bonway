@@ -26,10 +26,13 @@ let playing = false;     // lösningen spelas upp och input är låst
 let levelClean = true;   // nivån spelas utan ångra, börja om eller slut på drag (perfekt)
 let levelHelped = false; // lösningen har visats på nivån, så den ger inga poäng
 let lastEnded = null;    // senast avslutade runda, markeras i topplistan
+let current = 0;         // ön som visas just nu
+let visiting = false;    // ön öppnades via en länk till en annan ö än spelarens egen: inga poäng
 
 // Progressen på ön sparas så att spelaren fortsätter på rätt nivå efter omladdning. Ett avbrutet
 // försök räknas som att börja om, så nivån är då inte längre perfekt.
 function saveProgress() {
+  if (visiting) return;
   store.set('bonway.progress', { island, stage, cleared, helped: levelHelped, clean: levelClean && !moves.length });
 }
 
@@ -174,7 +177,7 @@ function move(li, d) {
   if (playing || !after.done.every(Boolean)) return true;
   playSound(stage === set.stages.length ? 'island' : 'level', arrive + 250);
   // Poäng bara första gången nivån klaras på ön
-  const result = firstClear ? scoreLevel(stage, levelClean, levelHelped, stage === set.stages.length) : null;
+  const result = firstClear && !visiting ? scoreLevel(stage, levelClean, levelHelped, stage === set.stages.length) : null;
   showScore(result && result.points > 0);
   // Firande när sista bilen har kommit fram
   if (!calm) celebrate(after, anim.t0 + cells.length * CELL_MS, result);
@@ -185,7 +188,8 @@ function celebrate(st, t0, result) {
   const points = st.trails.map((tr, i) => [cx(tr[tr.length - 1]), cy(tr[tr.length - 1]), COLORS[i]]);
   spawnConfetti(confetti, points, cell, t0);
   let sub = '';
-  if (result && result.helped) sub = 'Lösningen visades – inga poäng';
+  if (visiting) sub = 'Spelad via länk – inga poäng';
+  else if (result && result.helped) sub = 'Lösningen visades – inga poäng';
   else if (result) sub = [`+${result.points} poäng`, result.perfect && 'Perfekt', result.streak > 1 && `🔥 ${result.streak}`].filter(Boolean).join(' · ');
   banner = { text: stage === set.stages.length ? 'Ön klar!' : `Nivå ${stage} klar!`, sub, t0 };
 }
@@ -207,7 +211,7 @@ function afterChange() {
 
   const msg = $('msg');
   if (won) {
-    msg.textContent = playing ? 'Så här går det.' : last ? 'Ön är klar!' : `Klart! Nivå ${stage + 1} är upplåst.`;
+    msg.textContent = playing ? 'Så här går det.' : last ? 'Ön är klar!' : visiting ? 'Klart!' : `Klart! Nivå ${stage + 1} är upplåst.`;
     msg.className = 'ok';
   } else if (left === 0) {
     msg.textContent = 'Slut på drag. Ångra eller börja om.'; msg.className = 'bad';
@@ -219,10 +223,11 @@ function afterChange() {
   if (!playing) saveProgress();
 
   $('next').hidden = !won || playing;
-  $('next').textContent = last ? 'Ny ö' : 'Nästa nivå';
-  // En nivå låses upp när den föregående är klarad
+  $('next').textContent = !last ? 'Nästa nivå' : visiting ? 'Till min ö' : 'Ny ö';
+  $('new').textContent = visiting ? 'Till min ö' : 'Hoppa över ön';
+  // En nivå låses upp när den föregående är klarad; på en ö från en länk är alla nivåer öppna
   document.querySelectorAll('#count button').forEach(b => {
-    const k = +b.dataset.k, locked = k > 1 && !cleared[k - 1];
+    const k = +b.dataset.k, locked = !visiting && k > 1 && !cleared[k - 1];
     b.setAttribute('aria-pressed', k === stage);
     b.disabled = locked;
     b.title = locked ? `Klara nivå ${k - 1} först` : '';
@@ -245,21 +250,43 @@ function showScore(bump = false) {
   }
 }
 
-// Laddar ön spelaren är på. advance går vidare till nästa ö i ordningen; note visas när ön är laddad.
-function newIsland(advance = false, note = '') {
+// Länkar till en ö och nivå: #7 öppnar ö 7 och #7-2 ö 7 nivå 2. Adressen följer med när man
+// spelar, så att den går att dela direkt.
+function linkFromHash() {
+  const m = /^#(\d+)(?:-([123]))?$/.exec(location.hash);
+  return m && +m[1] > 0 ? { island: +m[1] - 1, stage: m[2] ? +m[2] : 1 } : null;
+}
+
+// Laddar en ö. Utan link är det spelarens egen ö, och advance går vidare till nästa i ordningen.
+// En länk till en annan ö öppnas utan poäng och utan att spelarens progress påverkas.
+function newIsland(advance = false, note = '', link = null) {
   if (advance) { island++; store.set('bonway.island', island); }
+  visiting = !!link && link.island !== island;
+  current = visiting ? link.island : island;
   $('msg').textContent = 'Bygger ön …'; $('msg').className = '';
   // Låt texten hinna ritas innan en eventuell tung generering körs
   setTimeout(() => {
     // Efter sista ön börjar ordningen om; utan puzzles.json skapas öar direkt i webbläsaren
-    const next = pool.length ? deserialize(pool[island % pool.length]) : generate(3);
+    const next = pool.length ? deserialize(pool[current % pool.length]) : generate(3);
     if (!next) { $('msg').textContent = 'Kunde inte skapa en ö. Försök igen.'; $('msg').className = 'bad'; return; }
     set = next;
-    $('island').textContent = `Ö ${island + 1}`;
+    $('island').textContent = `Ö ${current + 1}`;
     reveal = calm ? null : performance.now();
-    const saved = store.get('bonway.progress', null);
-    if (saved && saved.island === island) { cleared = saved.cleared; startStage(saved.stage, saved); }
-    else { cleared = []; startStage(1); }
+    if (visiting) {
+      cleared = [];
+      startStage(link.stage);
+      note = note || `Du spelar Ö ${current + 1} via en länk – det ger inga poäng.`;
+    } else {
+      const saved = store.get('bonway.progress', null), mine = saved && saved.island === island;
+      cleared = mine ? saved.cleared : [];
+      let s = mine ? saved.stage : 1, restore = mine ? saved : null;
+      // En länk till den egna ön får bara öppna nivåer som är upplåsta
+      if (link && link.stage !== s) {
+        if (link.stage === 1 || cleared[link.stage - 1]) { s = link.stage; restore = null; }
+        else note = note || `Nivå ${link.stage} är inte upplåst än.`;
+      }
+      startStage(s, restore);
+    }
     if (note) $('msg').textContent = note;
   }, 20);
 }
@@ -273,6 +300,7 @@ function startStage(s, restore = null) {
   levelHelped = restore ? restore.helped : false;
   // Bilarna studsar fram, efter att ön har byggts upp om den är ny
   popAt = performance.now() + (reveal ? revealDuration() * 0.75 : 0);
+  history.replaceState(null, '', `#${current + 1}-${s}`);
   rebuildCity();
   afterChange();
 }
@@ -328,9 +356,11 @@ window.addEventListener('keydown', e => {
 $('undo').onclick = () => { moves.pop(); anim = null; levelClean = false; afterChange(); };
 $('reset').onclick = () => { moves = []; selected = -1; anim = null; levelClean = false; afterChange(); };
 $('solve').onclick = playSolution;
-$('next').onclick = () => stage < set.stages.length ? startStage(stage + 1) : newIsland(true);
-// Att hoppa över en ö innan den är klar avslutar rundan och sparar den i topplistan
+$('next').onclick = () => stage < set.stages.length ? startStage(stage + 1) : newIsland(!visiting);
+// Att hoppa över en ö innan den är klar avslutar rundan och sparar den i topplistan.
+// På en ö från en länk tar knappen spelaren tillbaka till sin egen ö.
 $('new').onclick = () => {
+  if (visiting) return newIsland();
   if (set && !cleared[set.stages.length] && run.score > 0) {
     lastEnded = endRun();
     showScore();
@@ -343,6 +373,20 @@ document.querySelectorAll('#count button').forEach(b => {
   b.onclick = () => { if (set && !playing && !b.disabled) startStage(+b.dataset.k); };
 });
 window.addEventListener('resize', resize);
+// En länk som klistras in i adressfältet medan spelet är öppet
+window.addEventListener('hashchange', () => {
+  const link = linkFromHash();
+  if (link && !(link.island === current && link.stage === stage)) newIsland(false, '', link);
+});
+
+// Dela nivån: telefonens delningsmeny om den finns, annars kopieras länken
+$('shareBtn').onclick = async () => {
+  const url = location.href, text = `Klarar du Ö ${current + 1}, nivå ${stage} i Bonway?`;
+  try {
+    if (navigator.share) await navigator.share({ title: 'Bonway', text, url });
+    else { await navigator.clipboard.writeText(url); $('msg').textContent = 'Länken är kopierad.'; $('msg').className = 'ok'; }
+  } catch {}
+};
 
 // ---------- Dialoger ----------
 
@@ -391,7 +435,7 @@ Promise.all([
     initTiles(tiles);
     pool = saved.filter(o => deserialize(o));
     resize();
-    newIsland();
+    newIsland(false, '', linkFromHash());
   })
   .catch(() => { $('msg').textContent = 'Kunde inte läsa in spelet. Ladda om sidan.'; $('msg').className = 'bad'; });
 

@@ -6,6 +6,12 @@ annan bils rutt, och alla bilar ska ut till en lastzon i sin egen färg innan dr
 Varje ö spelas i tre nivåer med en, två och tre bilar. Nivåerna låses upp en i taget, och öarna kommer
 i samma ordning för alla så att det går att jämföra hur långt man har kommit.
 
+## Länkar till en ö
+
+`#7` öppnar ö 7 och `#7-2` ö 7 nivå 2, till exempel https://magnus-engstrom.github.io/bonway/#7-2.
+Adressen uppdateras medan man spelar och knappen "Dela nivå" delar den. En länk till en annan ö än
+spelarens egen öppnas med alla nivåer olåsta men ger inga poäng och påverkar inte den egna progressen.
+
 ## Köra lokalt
 
 ```sh
